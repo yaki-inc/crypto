@@ -162,47 +162,7 @@ export function computeSharedKey(theirPublicKey: EncryptionPublicKey, myPrivateK
 
 In addition to above helpful type safe APIs, Yaki, Inc has developed bespoke encryption protocols that are built atop the foundational cryptographic methods described above. The stack mainly comprises of two major protocols, and are made available as part of the open source `@yaki-inc/crypto` and the soon to be released `@e2e2/client`  npm packages.
 
-`e2e2/client` , which will be available soon along with [E2E2.me](http://E2E2.me) in Q2 of 2024, is the client API for interfacing with the [E2E2.me](http://E2E2.me) authentication and encrypted messaging service provider.
-
-### CAKE Protocol
-
-**Counterparty Authorization via Key Exchange** (CAKE) allows an authentication provider to provably authorize access to services in an end-to-end encrypted manner. It is quite analogous to OAuth, except the private keys of the authentication/authorization provider(s), service provider(s), and that of the user are never exposed, yet the services can verify that the user has given other users and/or services access to their resources. The protocol is much more useful in privacy guarding authorization flows such as verifying a user’s work permit and or credit authorization without having to disclose their ID.
-
-This is currently not used in any flows, but this is how E2EE third party connector API authorizations will work in Datayaki in the future. Also, all login accounts will eventually be moved to Yaki’s [E2E2.me](https://E2E2.me) service that serves as an Authentication provider for this protocol.
-
-Here’s a quick run down of the CAKE protocol:
-
-Suppose there is an E2EE authentication provider, say [e2e2.me](https://e2e2.me) . And there are two E2EE services, say Datayaki and Yaki Drive, and the end user wants to login to both services using their E2E2 account, and wants to pull their CSV files from Yaki Drive into their Datayaki account. This involves 3 kinds of authorizations.
-
-1. Datayaki must be authorized by user to authenticate with their E2E2 account. i.e, User mints an E2E2 authorization token for Datayaki.
-2. Yaki Drive must be authorized to allow authenticating with their E2E2 account. i.e, User mints an E2E2 authorization token for Yaki Drive.
-3. Datayaki must be authorized to access Yaki Drive on behalf of user. i.e, User mints an Yaki Drive authorization token for Datayaki.
-
-E2E2 being the authn provider serves as a directory of public keys for all parties involved. i.e, E2E2 provides public keys for user, Datayaki, Yaki Drive and E2E2. As the Authn provider, E2E2 also allows the user to login with SRP to prove their identity and gives them access to their SRP-password encrypted private key.
-
-When user mints an authorization token, they perform the following:
-
-```tsx
-// User authorizes Service A to access Service B.
-// 1. Compute Shared Key of User and Service B.
-// 2. Concatenate it with Service A's public key. (Optionally, you can concatenate with more metadata such as expiry date, access level, role, etc.)
-// 2. Asymmetrically Encrypt it with Service B's public key and provide it to Service A as authorization.
-const authorizationToken = asymmetricEncrypt(computeSharedKey(userPrivate, svcBPublic) + ':' + svcAPublic, svcBPublic);
-```
-
-Since the authorizationToken is encrypted using ServiceB’s public key, Service A has no way to decrypt it and get access to the shared key that should only be visible to User and B. And no other private data is shared with A.
-
-But now, A can show this token as verification to B. And B can verify that the user has specifically authorized A to access it by performing the following:
-
-```tsx
-// Service B verifies Service A is authorized by user to access it.
-// 1. Decrypt authorization data using private key.
-// 2. Compute user/serviceB shared key.
-// 3. Split decrypted data and verify shared key and Service A public key match.
-// 4. Extract other metadata such as expiry, role, access level, etc.
-```
-
-As you can see from above, Service B doesn’t need any private information from either user or A. And more importantly, B can perform this verification all on its own as long as it has access to the user and A’s public keys. The shared key is a secret that B and the user share and compute independent of each other using DHKE. This is a highly scalable way to authorize and verify access on the web in an E2EE way.
+This package includes **YEP**, a bespoke protocol that allows you to provably authorize access and user permissions using cryptographic keys and DHKE. And soon, once `@e2e2` is published along with the launch of https://E2E2.me service, it will also include **CAKE** protocol, another bespoke protocol that bring OAuth-like authorization flows to the End-to-end encrypted web. But that will have to wait...
 
 ### YEP Protocol
 
