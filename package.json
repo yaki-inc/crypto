@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@babel/core": "7.21.0",
-    "@babel/preset-env": "^7.23.3",
+    "@babel/preset-env": "^7.23.9",
     "@babel/preset-typescript": "^7.23.3",
     "@types/argon2-browser": "1.18.4",
     "@types/jest": "^27.5.2",
