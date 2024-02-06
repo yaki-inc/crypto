@@ -5,11 +5,13 @@
 ✅ Easy-to-use
 ✅ Battle tested encryption
 
-Yaki, Inc's crypto library is built atop the popular and widely used tweetnacl.js library. Tweetnacl is great, but developers can get easily lost with all the different kinds of keys involved.
+Yaki, Inc's crypto library is built atop the popular and widely used [tweetnacl][tweetnacl] library. Tweetnacl is great, but developers can get easily lost with all the different kinds of keys involved.
 
 There are public keys, secret keys, symmetric keys, encrypted bytes, unit8arrays passed over the wire as base64, and on and on... All represented as javascript strings. It is very easy to get stuck in debugland. Or worse yet, it's very easy to accidentally post a client secret key to the backend API end point and leak your keys to some unencrypted access.log file on a server :(
 
-`@yaki-inc/crypto` solves for that by introducing typed jsoon primitives for all of those, and a strongly typed API to go along with them. We define the following primitives for cryptography. These ensure that a private key is never leaked in place of a public key, and that a signing key and encryption key aren't mixed up.
+ This is a problem we faced while developing [Datayaki][datayaki].
+ 
+ `@yaki-inc/crypto` solves for that by introducing typed jsoon primitives for all of those, and a strongly typed API to go along with them. We define the following primitives for cryptography. These ensure that a private key is never leaked in place of a public key, and that a signing key and encryption key aren't mixed up.
 ```tsx
 export type SymmetricKey = Uint8Array;
 export type Nonce = Uint8Array;
@@ -160,13 +162,13 @@ export function computeSharedKey(theirPublicKey: EncryptionPublicKey, myPrivateK
 
 > Note: We also provide API to optionally sign and verify symmetrically encrypted datagrams as well using `AEAD.signAndEncryptSymmetric`, and `AEAD.decryptSymmetricAndVerify` functions.
 
-## Yaki Encryption Stack
+# Yaki Encryption Stack
 
 In addition to above helpful type safe APIs, Yaki, Inc has developed bespoke encryption protocols that are built atop the foundational cryptographic methods described above. The stack mainly comprises of two major protocols, and are made available as part of the open source `@yaki-inc/crypto` and the soon to be released `@e2e2/client`  npm packages.
 
 This package includes **YEP**, a bespoke protocol that allows you to provably authorize access and user permissions using cryptographic keys and DHKE. And soon, once `@e2e2` is published along with the launch of https://E2E2.me service, it will also include **CAKE** protocol, another bespoke protocol that bring OAuth-like authorization flows to the End-to-end encrypted web. But that will have to wait...
 
-### YEP Protocol
+## YEP Protocol
 
 In Datayaki’s privacy first collaboration platform, Roles and Permissions are also granted and verified in an end-to-end encrypted manner. **Yaki Encrypted Permissions** guarantees that permissions can only be granted by authorized parties and are safe from unauthorized parties manually injecting user authorizations within a service.
 
@@ -213,17 +215,29 @@ As you can see from above, this protocol comes with a few nice desirable traits.
 - Unauthorized personnel are prevented from authorizing users by manipulating records on the server, as only authorized personnel who already have access to PSK can share it with other users. So, a database admin can’t simply go set a flag to enable access to an unauthorized user.
 - Since each user has a unique PGK minted for their use, A MITM / Replay attack does not allow an unauthorized party to gain permission via database record manipulation.
 
-One thing to note here is that in YEP, the permission’s secret key is shared with all authorized users. This is different from CAKE where none of the parties involved, i.e users, services, and resources, expose their secret keys to any of the other parties. This is essential to allow users to authorize one another and pass on permission rights.
+> **Note:** In YEP, the permission’s secret key is shared with all authorized users. This is essential to allow users to authorize one another and pass on permission rights. This is different from CAKE, another Yaki protocol which will be published soon will have centralized authorization where no one has access to the secret keys of any other parties, but in that case, the protocol solves for OAuth-esque flow for authn/authz in the end-to-end encrypted web.
 
 Another thing to note is that the permissions themselves are simply public-key / private-data objects and don’t come with any logical restrictions, and it is up to the service to implement any restrictions based on the authorizations the user possesses. This allows for flexibility in the kinds of access control mechanisms that can be implemented.
 
-For example, the server can also require the authorized user of a permission, say `VIEW_DOC1`, to possess additional permission such as `SHARE_DOC1` to be able to share permission secrets with other users. The protocol itself is neutral to service implementation, and can be easily extended and made more restrictive with additional service logic.
+For example, the service that holds a repository of user's permission grants can also require the authorized user of a permission, say `VIEW_DOC1`, to possess additional permission such as `SHARE_DOC1` to be able to share permission secrets with other users.
 
-Of course, nothing prevents an unauthorized user without a `SHARE_DOC1` permission from granting a PGK for another user. For this reason, the service should always maintain a record of the PGK granted to the user to verify that the user has actually been granted access through legitimate means. In other words, permission grants should be tracked in a database the service has control of.
+> **Note:** The protocol itself is neutral to service implementation, and can be easily extended and made more restrictive with additional service logic.
+
+Of course, nothing prevents an unauthorized user without a `SHARE_DOC1` permission from granting a PGK for another user and sharing it off-channel. For this reason, if the service cares about the means by which a user attained their grant, then the should maintain a repository of grants for the user and verify against it to be sure that access was granted through legitimate means.
 
 **Revoking Permissions**
 
-Revoking permissions can be done by simply removing the PGK record for a specific user. This would allow the service to fail validation even though the user might present a valid proof.
+Revoking permissions can be done in two ways:
+
+1. Rotating the permission keys and minting new grants for every other user.
+  
+   > But this operation scales linearly with the number of active users, and may not be desireable, even though it guarantees the most security. And, for the cost, you gain the ability to perform access checks in a decentralized fashion.
+
+2. By maintaining a repository of grants as mentioned earlier, and simply removing the PGK record for a specific user. This would allow the service to fail validation even though the user might present a valid proof.
+
+   > Although this is a O(1) operation, this comes at the cost of weakened security as unauthorized parties now have access to the PSK. It also comes at the cost of not being able to verify access in a decentralized fashion.
+
+Ideally, you would perform both steps so that access revocation can be quick by performing (2) first, and then you can kick off a process to asynchronously rotate keys and grants.
 
 **Security Risks & Guarantees**
 
@@ -321,3 +335,6 @@ YEP.verifyProof<Name extends string>(
 ```
 
 Returns true when valid. False otherwise.
+
+[datayaki]: https://datayaki.com
+[tweetnacl]: https://www.npmjs.com/package/tweetnacl
