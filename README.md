@@ -1,3 +1,4 @@
+![Logo](https://yaki.company/yaki-crypto.svg)
 # `@yaki-inc/crypto`
 
 ✅ Strongly typed
@@ -91,9 +92,10 @@ import { generateSymmetricKey, AEAD, EncryptedDatagram, StringDatagramCodec } fr
 const data = 'Hello World!';
 const key = generateSymmetricKey();
 const cipher: EncryptedDatagram<string, StringDatagramMetadata> = AEAD.encryptSymmetric(data, StringDatagramCodec, symmetricKey);
-assertEquals(data, AEAD.decrypt(ciphertext, StringDatagramCodec, symmetricKey));
+assertEquals(data, AEAD.decryptSymmetric(ciphertext, StringDatagramCodec, symmetricKey));
 
-assertEquals(data, AEAD.decryptSymmetric(cipher, NumberDatagramCodec, key)); // ❌ This will throw a TypeError.
+// ❌ The following will throw a TypeError.
+assertEquals(data, AEAD.decryptSymmetric(cipher, NumberDatagramCodec, key));
 ```
 
 There are many algorithms available for symmetric encryption. Datayaki uses the tweetnacl standard AES.
@@ -133,7 +135,7 @@ expect(unsealedData).toEqual(testObject);
 
 ### Diffie Hellman Key Exchange (DHKE)
 
-DH Key Exchange is a method for two parties to agree on a common symmetric encryption key using they Asymmetric Encryption Key Pairs, without exposing either party’s private key. This is the more common usecase of Asymmetric Encryption. Thus in our library, the seldom used simpler asymmetric encryption is termed `seal`/`unseal`, while the more common DHKE is termed `encryptAsymmetric`/`decryptAsymmetric`.
+DH Key Exchange is a method for two parties to agree on a common symmetric encryption key using their Asymmetric Encryption Key Pairs, without exposing either party’s private key. This is the more common use case of Asymmetric Encryption. Thus in our library, the seldom used simpler asymmetric encryption is termed `seal`/`unseal` following the nomenclature used by `lisodium`, while the more common DHKE based encrypted communication scheme is termed `encryptAsymmetric`/`decryptAsymmetric`.
 
 One of the interesting properties of Public/Private Asymmetric encryption is that given two parties Alice and Bob (or Client and Server), you can compute a shared Symmetric Key by combine one party’s Private Key with the other party’s Public Key, and it doesn’t matter which party’s private key or public key is used, you will arrive at the same shared Symmetric Key.
 
@@ -238,4 +240,84 @@ YEP, like any other security protocol, has it's pros and cons.
 - YEP by itself guarantees protection against unauthorized “Escalation of Privileges”.
 - but YEP also introduces the risk of unintended “Denial of Service”, which can be mitigated through LoFi caching and recovery mechanisms such as database backups, as is the case with Datayaki.
 
-See yep.test.ts for examples of how to implement YEP in your code.
+# YEP API
+
+See yep.test.ts for examples of how to implement YEP in your code. But the key concepts to pay attention to are:
+* `Permission` - An object that holds and represents a granular permission as a keypair.
+* `Grant` - An authorization to enable that permission.
+* `Proof` - A cryptographic proof that can be used by a service to know that you have been granted the permission.
+
+## Creating a permission
+
+```tsx
+YEP.newPermission<Keys extends string, Name extends string>(
+  name: Name,
+  data:  PermissionDataType<Keys>,
+  creatorPublicKey: PublicKey): { permission: Permission<Name>, keys: PermissionKeyPair<Name>, grant: PermissionGrant<Name>};
+```
+`Keys` and `PermissionDataType` are used for complex permissions where granting one permission should also include grants for other permissions. For example, a document's  `Edit` permission should also include grants for `View` and `Comment` in that document. For the simple use case, where a permission only manages access to a single use case, you would simply call:
+
+```tsx
+const { permission: viewPerm, keys: viewPermKeys, grant: viewGrant } = YEP.newPermission('VIEW',{},myKeys.public);
+```
+
+For complex permissions, you would have to create the simple ones first, and include their keys in the `data` object for the complex permission.
+
+```tsx
+    const {permission: viewPermission, keys: viewKeys, grant: viewGrant} = YEP.newPermission('VIEW', {}, alice.public);
+    const {permission: commentPermission, keys: commentKeys, grant: commentGrant} = YEP.newPermission('COMMENT', { 'VIEW', viewKeys.private }, alice.public);
+    const {permission: editPermission, keys: editKeys, grant: editGrant} = YEP.newPermission('EDIT', { 'VIEW': viewKeys.private, 'COMMENT': commentKeys.private }, alice.public);
+```
+
+As you can see, the creator will automatically have a grant generated for them, and it is important to save this, as it is needed to grant others access to that permission.
+
+**IMPORTANT:** Permissions can only be granted by those who have already been granted permissions.
+
+## Granting permission
+
+```tsx
+YEP.createGrant<Name extends string>(
+  myPrivateKey: EncryptionPrivateKey,
+  myPermissionGrant: PermissionGrant<Name>,
+  theirPublicKey: EncryptionPublicKey) : PermissionGrant<Name>
+```
+The grantor will need their permission grant, their private key, and the grantee's public key to issue a new grant for the other party.
+
+## Proving access
+
+```tsx
+YEP.createProof<Keys extends string, Name extends string>(
+  permission: Permission<Keys, Name>,
+  myPermissionGrant: PermissionGrant<Name>,
+  myPrivateKey: EncryptionPrivateKey,
+  mySigningKey: SigningPrivateKey,
+  servicePublicKey: ServicePublicKey): PermissionProof<Name>
+```
+
+In case of a complex permission, such as the document edit permission, you can prove access to a subkey by using `YEP.createProofFor(...)`, which
+also takes in the permission name as its first parameter.
+
+```tsx
+YEP.createProofFor<Keys extends string, Name extends string, ProofName extends Keys>(
+      name: ProofName,
+      permission: Permission<Keys, Name>,
+      myPermissionGrant: PermissionGrant<Name>,
+      myPrivateKey: EncryptionPrivateKey,
+      mySigningKey: SigningPrivateKey,
+      servicePublicKey: ServicePublicKey ): PermissionProof<ProofName>
+```
+
+## Verifying the PermissionProof
+
+This check is performed by the service to which a user provided a proof.
+
+```tsx
+YEP.verifyProof<Name extends string>(
+  permission: Permission<string,Name>,
+  proof: PermissionProof<Name>,
+  userPublicKey: EncryptionPublicKey,
+  userSigningPublicKey: SigningPublicKey,
+  servicePrivateKey: ServicePrivateKey): boolean
+```
+
+Returns true when valid. False otherwise.
