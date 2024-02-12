@@ -1,7 +1,6 @@
 import { Range } from "semver";
 import { DatagramCodec, DatagramMetadata, SymmetricKey, bytesToUtf8String, utf8StringToBytes } from "./crypto";
 import { SuperJSON } from "superjson";
-import { fromByteArray } from "base64-js";
 
 export type StringDatagramMetadata = {
   type: 'datagram://string',

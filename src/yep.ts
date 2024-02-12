@@ -1,25 +1,19 @@
-import { fromByteArray, toByteArray } from "base64-js"
-import { AEAD, DatagramCodec, DatagramMetadata, EncryptedDatagram, EncryptionKeyPair, EncryptionPrivateKey, EncryptionPublicKey, KeyPair, PrivateKey, PublicKey, SigningPrivateKey, SigningPublicKey, SymmetricKey, computeSharedKey, generateSymmetricKey } from "./crypto"
-import nacl, { BoxKeyPair } from "tweetnacl"
+import { fromByteArray } from "base64-js"
+import { AEAD, DatagramCodec, DatagramMetadata, EncryptedDatagram, EncryptionKeyPair, EncryptionPrivateKey, EncryptionPublicKey, SigningPrivateKey, SigningPublicKey, SymmetricKey, TypedEncryptionKeyPair, TypedEncryptionPrivateKey, TypedEncryptionPublicKey, computeSharedKey, generateSymmetricKey } from "./crypto"
+import nacl from "tweetnacl"
 import { SymmetricKeyDatagramCodec, SymmetricKeyDatagramMetadata, createJsonDatagramCodec } from "./codec"
 
 export type PermissionSecret<Name extends string> = { name: Name, key: SymmetricKey };
 
-export interface PermissionPublicKey<Name extends string> extends EncryptionPublicKey {
-  name: Name,
-  subtype: 'permission'
+export interface PermissionPublicKey<Name extends string> extends TypedEncryptionPublicKey<'permission'> {
+  name: Name;
 }
-export interface PermissionPrivateKey<Name extends string> extends EncryptionPrivateKey {
-  name: Name,
-  subtype: 'permission'
+export interface PermissionPrivateKey<Name extends string> extends TypedEncryptionPrivateKey<'permission'> {
+  name: Name;
 }
 
-export interface ServicePublicKey extends EncryptionPublicKey {
-  subtype: 'service'
-}
-export interface ServicePrivateKey extends EncryptionPrivateKey {
-  subtype: 'service'
-}
+export interface ServicePublicKey extends TypedEncryptionPublicKey<'service'> {}
+export interface ServicePrivateKey extends TypedEncryptionPrivateKey<'service'> {}
 
 type PermissionDataType<Keys extends string> = { [Key in Keys]: PermissionPrivateKey<Key> };
 export type PermissionData<Keys extends string, Name extends string> = { privateKey: PermissionPrivateKey<Name>, data: PermissionDataType<Keys>};
@@ -28,7 +22,6 @@ export interface PermissionDataDatagramMetadata<Name extends string> extends Dat
   type: `datagram://permission_${Name}`;
   version: '0.1.0';
 }
-
 
 export type Permission<Keys extends string, Name extends string> = {
   name: Name,
@@ -111,58 +104,25 @@ export class YEP {
   }
 }
 
-export class PermissionKeyPair<Name extends string> implements KeyPair {
+export class PermissionKeyPair<Name extends string> extends EncryptionKeyPair {
   public: PermissionPublicKey<Name>;
   private: PermissionPrivateKey<Name>;
 
   constructor(name: Name, pub: Uint8Array | string, priv: Uint8Array | string) {
+    super(pub, priv);
     this.private = {name, visibility:'private', type: 'encryption', subtype: 'permission', key: (typeof priv === 'string') ? priv : fromByteArray(priv)};
     this.public = {name, visibility: 'public', type: 'encryption', subtype: 'permission', key: (typeof pub === 'string') ? pub : fromByteArray(pub)};
   }
-
-  /**
-   * returns a non-type safe keypair that can be easily plugged into any tweetnacl function.
-   * @returns {BoxKeypair} tweetnacl keypair.
-   */
-  static toBoxKeyPair<Name extends string>(keypair: PermissionKeyPair<Name>): BoxKeyPair {
-    return {
-      publicKey: toByteArray(keypair.public.key),
-      secretKey: toByteArray(keypair.private.key),
-    }
-  }
-
-  static toEncryptionKeyPair<Name extends string>(keypair: PermissionKeyPair<Name>): EncryptionKeyPair {
-    return new EncryptionKeyPair(keypair.public.key, keypair.private.key);
-  }
 }
 
-export class ServiceKeyPair implements KeyPair {
-  public: ServicePublicKey;
-  private: ServicePrivateKey;
-
+export class ServiceKeyPair extends TypedEncryptionKeyPair<'service'> {
   constructor(pub: Uint8Array | string, priv: Uint8Array | string) {
-    this.private = {visibility:'private', type: 'encryption', subtype: 'service', key: (typeof priv === 'string') ? priv : fromByteArray(priv)};
-    this.public = {visibility: 'public', type: 'encryption', subtype: 'service', key: (typeof pub === 'string') ? pub : fromByteArray(pub)};
-  }
-
-  /**
-   * returns a non-type safe keypair that can be easily plugged into any tweetnacl function.
-   * @returns {BoxKeypair} tweetnacl keypair.
-   */
-  static toBoxKeyPair = (keypair: ServiceKeyPair): BoxKeyPair => {
-    return {
-      publicKey: toByteArray(keypair.public.key),
-      secretKey: toByteArray(keypair.private.key),
-    }
-  }
-
-  static toEncryptionKeyPair = (keypair: ServiceKeyPair): EncryptionKeyPair => {
-    return new EncryptionKeyPair(keypair.public.key, keypair.private.key);
+    super(pub, priv, 'service');
   }
 }
 
 /**
- * @returns {PermissionKeyPair} Keypair used for permission.
+ * @returns {PermissionKeyPair} Keypair used to represent permission.
  */
 export function generatePermissionKeyPair<Name extends string>(name: Name): PermissionKeyPair<Name> {
   const permKeypair = nacl.box.keyPair();
@@ -170,7 +130,7 @@ export function generatePermissionKeyPair<Name extends string>(name: Name): Perm
 }
 
 /**
- * @returns {ServiceKeyPair} Keypair used for permission.
+ * @returns {ServiceKeyPair} Keypair used to represent service identity.
  */
 export function generateServiceKeyPair(): ServiceKeyPair {
   const permKeypair = nacl.box.keyPair();

@@ -166,11 +166,11 @@ export function computeSharedKey(theirPublicKey: EncryptionPublicKey, myPrivateK
 
 In addition to above helpful type safe APIs, Yaki, Inc has developed bespoke encryption protocols that are built atop the foundational cryptographic methods described above. The stack mainly comprises of two major protocols, and are made available as part of the open source `@yaki-inc/crypto` and the soon to be released `@e2e2/client`  npm packages.
 
-This package includes **YEP**, a bespoke protocol that allows you to provably authorize access and user permissions using cryptographic keys and DHKE. And soon, once `@e2e2` is published along with the launch of https://E2E2.me service, it will also include **CAKE** protocol, another bespoke protocol that bring OAuth-like authorization flows to the End-to-end encrypted web. But that will have to wait...
+This package includes **YEP**, a bespoke protocol that allows you to provably authorize access and user permissions using cryptographic keys and DHKE. And soon, once `@e2e2` is published along with the launch of https://E2E2.me service, it will also include **CAKE** protocol, another bespoke protocol that bring OAuth-like authorization flows to the End-to-end encrypted web. At which point, we may separate out the yaki encryption stack (YEP and CAKE) into its own package. But that will have to wait...
 
 ## YEP Protocol
 
-In Datayaki’s privacy first collaboration platform, Roles and Permissions are also granted and verified in an end-to-end encrypted manner. **Yaki Encrypted Permissions** guarantees that permissions can only be granted by authorized parties and are safe from unauthorized parties manually injecting user authorizations within a service.
+In [Datayaki][datayaki]’s privacy first collaboration platform, Roles and Permissions are also granted and verified in an end-to-end encrypted manner. **Yaki Encrypted Permissions** guarantees that permissions can only be granted by authorized parties and are safe from unauthorized parties manually injecting user authorizations within a service.
 
 YEP works as follows:
 
@@ -323,7 +323,7 @@ YEP.createProofFor<Keys extends string, Name extends string, ProofName extends K
 
 ## Verifying the PermissionProof
 
-This check is performed by the service to which a user provided a proof.
+This check is performed by the service to which a user provided a proof. Returns true if and only if the provided proof is a valid proof for the permission.
 
 ```tsx
 YEP.verifyProof<Name extends string>(
@@ -333,8 +333,7 @@ YEP.verifyProof<Name extends string>(
   userSigningPublicKey: SigningPublicKey,
   servicePrivateKey: ServicePrivateKey): boolean
 ```
-
-Returns true when valid. False otherwise.
+***
 
 [datayaki]: https://datayaki.com
 [tweetnacl]: https://www.npmjs.com/package/tweetnacl

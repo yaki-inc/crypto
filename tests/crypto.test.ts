@@ -1,4 +1,3 @@
-import SuperJSON from 'superjson';
 import * as yc from '../src';
 import { toByteArray, fromByteArray } from 'base64-js';
 
@@ -134,7 +133,6 @@ describe('test AEAD', () => {
     console.log(JSON.stringify(ed));
     const decrypted = yc.AEAD.decryptSymmetric(ed, testCodec, sk);
     expect(decrypted).toEqual(testObject);
-    console.log(SuperJSON.stringify(testObject));
 
     // Trying to use an incompatible codec to decrypt should fail.
     type AnotherMetadata = { type: 'datagram://json/AnotherType', version: '0.1.0'};

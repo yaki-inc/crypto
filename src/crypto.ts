@@ -247,6 +247,44 @@ export class SigningKeyPair implements KeyPair {
   }
 }
 
+export interface TypedEncryptionPublicKey<T extends String> extends EncryptionPublicKey {
+  subtype: T
+}
+
+export interface TypedEncryptionPrivateKey<T extends String> extends EncryptionPrivateKey {
+  subtype: T
+}
+
+export class TypedEncryptionKeyPair<T extends String> extends EncryptionKeyPair {
+  public: TypedEncryptionPublicKey<T>;
+  private: TypedEncryptionPrivateKey<T>;
+
+  constructor(pub: Uint8Array | string, priv: Uint8Array | string, subtype: T) {
+    super(pub, priv);
+    this.private = {visibility: 'private', type: 'encryption', subtype, key: (typeof priv === 'string') ? priv : fromByteArray(priv)};
+    this.public = {visibility: 'public', type: 'encryption', subtype, key: (typeof pub === 'string') ? pub : fromByteArray(pub)};
+  }
+}
+
+export interface TypedSigningPublicKey<T extends String> extends SigningPublicKey {
+  subtype: T
+}
+
+export interface TypedSigningPrivateKey<T extends String> extends SigningPrivateKey {
+  subtype: T
+}
+
+export class TypedSigningKeyPair<T extends String> extends SigningKeyPair {
+  public: TypedSigningPublicKey<T>;
+  private: TypedSigningPrivateKey<T>;
+
+  constructor(pub: Uint8Array | string, priv: Uint8Array | string, subtype: T) {
+    super(pub, priv);
+    this.private = {visibility: 'private', type: 'signing', subtype, key: (typeof priv === 'string') ? priv : fromByteArray(priv)};
+    this.public = {visibility: 'public', type: 'signing', subtype, key: (typeof pub === 'string') ? pub : fromByteArray(pub)};
+  }
+}
+
 /**
  * Generates a Symmetric encryption key.
  * @returns {SymmetricKey} a random key used for Symmetric encryption.
