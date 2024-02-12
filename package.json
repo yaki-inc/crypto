@@ -31,7 +31,7 @@
   },
   "dependencies": {
     "base64-js": "^1.5.1",
-    "semver": "7.5.4",
+    "semver": "7.6.0",
     "superjson": "2.2.1",
     "tweetnacl": "^1.0.3"
   },
@@ -42,7 +42,7 @@
     "@types/argon2-browser": "1.18.4",
     "@types/jest": "^27.5.2",
     "@types/node": "20.11.17",
-    "@types/semver": "7.5.6",
+    "@types/semver": "7.5.7",
     "@typescript-eslint/eslint-plugin": "^7.0.1",
     "@typescript-eslint/parser": "^7.0.1",
     "babel-jest": "^29.7.0",
