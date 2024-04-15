@@ -41,7 +41,7 @@
     "@babel/preset-typescript": "^7.23.3",
     "@types/argon2-browser": "1.18.4",
     "@types/jest": "^29.5.12",
-    "@types/node": "20.11.24",
+    "@types/node": "20.12.7",
     "@types/semver": "7.5.8",
     "@typescript-eslint/eslint-plugin": "^7.1.0",
     "@typescript-eslint/parser": "^7.1.0",
