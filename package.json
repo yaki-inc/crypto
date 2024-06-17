@@ -36,7 +36,7 @@
     "tweetnacl": "^1.0.3"
   },
   "devDependencies": {
-    "@babel/core": "7.24.5",
+    "@babel/core": "7.24.7",
     "@babel/preset-env": "^7.24.7",
     "@babel/preset-typescript": "^7.24.7",
     "@types/argon2-browser": "1.18.4",
