@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: read # for checkout
+  id-token: write
 
 jobs:
   release:
@@ -25,6 +26,8 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: "24.x"
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
       - name: Install dependencies
         run: npm clean-install
       - name: Verify the integrity of provenance attestations and registry signatures for installed dependencies
@@ -32,5 +35,4 @@ jobs:
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npx semantic-release
