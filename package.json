@@ -54,6 +54,6 @@
     "semantic-release": "^25.0.9",
     "ts-jest": "^29.4.14",
     "ts-node": "^10.9.2",
-    "typescript": "^6"
+    "typescript": "^7"
   }
 }
